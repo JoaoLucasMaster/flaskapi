@@ -17,28 +17,23 @@ genai.configure(api_key=chave_secreta)
 
 # Função para buscar a consulta
 def gerarBuscarConsulta(consulta, dataset):
-    # Gerar embedding da consulta
     embedding_consulta = genai.embed_content(
         model=model,
         content=consulta,
         task_type="retrieval_query",
     )
     
-    # Verificar se "Embeddings" é uma coluna de arrays
     embeddings_array = np.array(dataset["Embeddings"].tolist())
-    
-    # Calcular produtos escalares
     produtos_escalares = np.dot(embeddings_array, embedding_consulta['embedding'])
     indice = np.argmax(produtos_escalares)
     
-    # Retornar conteúdo correspondente
     return dataset.iloc[indice]['Conteúdo']
 
 model2 = genai.GenerativeModel(model_name="gemini-1.0-pro")
 
 @app.route("/")
 def home():
-    consulta = "Qual foi o primeiro filme do Homem de Ferro?"
+    consulta = "Quem é você ?"
     resposta = gerarBuscarConsulta(consulta, modeloEmbeddings)
     prompt = f"Considere a consulta, {consulta}, Reescreva as sentenças de resposta de uma forma alternativa, não apresente opções de reescrita, {resposta}"
     response = model2.generate_content(prompt)
@@ -46,7 +41,6 @@ def home():
 
 @app.route("/api", methods=["POST"])
 def results():
-    # Verifique a chave de autorização
     auth_key = request.headers.get("Authorization")
     if auth_key != chave_secreta:
         return jsonify({"error": "Unauthorized"}), 401
@@ -61,4 +55,5 @@ def results():
     prompt = f"Considere a consulta, {consulta}, Reescreva as sentenças de resposta de uma forma alternativa, não apresente opções de reescrita, {resultado}"
     response = model2.generate_content(prompt)
     
-    return jsonify({"mensagem": response.text})
+    # Retorna apenas o texto da resposta sem formatação adicional
+    return jsonify({"mensagem": response.text.strip()})
